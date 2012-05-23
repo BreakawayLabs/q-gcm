@@ -1,0 +1,1 @@
+685ecd66-a49b-11e1-a7c9-f72de6c8b4ed bucket=breakawaylabs-qgcm-data datacenter=US encryption=none host=s3.amazonaws.com name=cloud port=80 storageclass=STANDARD type=S3 timestamp=1337752319.466035s
