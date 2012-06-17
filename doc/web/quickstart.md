@@ -1,0 +1,41 @@
+# Q-GCM Quickstart Guide
+
+The following instructions are designed to get you up and running 
+
+## Dependencies
+
+Q-GCM is targeted at Linux based, desktop class machines. The following packages are required to run on [Ubuntu 12.04 LTS](http://releases.ubuntu.com/precise/). 
+
+    sudo apt-get install git make gfortran python libfftw3-dev libnetcdf-dev liblapack-dev
+
+Users of other systems should ensure equivalent packages are installed.
+
+## Download
+
+The source code for Q-GCM is hosted on [github](https://github.com/BreakawayLabs/q-gcm). To download the latest development version, run:
+
+    git clone git@github.com:BreakawayLabs/.git
+
+For more details on how to download different releases, or to download as a zip/tar file, check the [downloads](http://qgcm.breakawaylabs.com.au/web/downloads) page.
+
+## Compile
+
+To compile the model with OpenMP enabled (recommended), run
+
+    make -C src
+
+To compile the model in single processor mode, with OpenMP disabled, run
+
+    make -C src single
+
+## Run
+
+The model should always be run via the `run_multi.py` script, which ensures all input and output files are managed correctly. To get started running a predefined North Atlantic double gyre model for 10 days, run
+
+    python run_multi.py -x src/q-gcm -o output -e dg_fast
+
+If you have compiled in single processor mode, run
+
+    python run_multi.py -x src/q-gcm-single -o output -e dg_fast
+
+This will run the model and place the output in `/output`.
