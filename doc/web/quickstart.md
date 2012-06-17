@@ -1,6 +1,6 @@
 # Q-GCM Quickstart Guide
 
-The following instructions are designed to get you up and running 
+The following instructions are designed to get you up and running with a simple example experiment. For more details on running the model please consult the user guide.
 
 ## Dependencies
 
