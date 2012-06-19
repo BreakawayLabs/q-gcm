@@ -1,0 +1,13 @@
+# Ignore compiled files
+src/*.o
+src/*.mod
+src/q-gcm
+src/q-gcm-single
+src/q-gcm-parallel
+src/q-gcm-debug-single
+src/q-gcm-debug-parallel
+src/q-gcm-profile-single
+src/q-gcm-profile-parallel
+
+# Ignore emacs generated files
+*~
