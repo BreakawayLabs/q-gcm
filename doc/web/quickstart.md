@@ -6,7 +6,7 @@ The following instructions are designed to get you up and running with a simple 
 
 Q-GCM is targeted at Linux based, desktop class machines. The following packages are required to run on [Ubuntu 12.04 LTS](http://releases.ubuntu.com/precise/). 
 
-    sudo apt-get install git make gfortran python libfftw3-dev libnetcdf-dev liblapack-dev
+    sudo apt-get install git make gfortran python libfftw3-dev libnetcdf-dev liblapack-dev netcdf-bin
 
 Users of other systems should ensure equivalent packages are installed.
 
