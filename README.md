@@ -16,7 +16,7 @@ Congratuations, you just ran a North Atlantic double gyre experiment for 10 days
 The output can be found in `output/`.
 For a slightly gentler introduction see the quickstart guide:
 
-[http://qgcm.breakawaylabs.com.au/web/docs/](http://qgcm.breakawaylabs.com.au/web/docs/)
+[http://qgcm.breakawaylabs.com.au/web/docs/project/quickstart](http://qgcm.breakawaylabs.com.au/web/docs/project/quickstart)
 
 ## Dependencies
 
