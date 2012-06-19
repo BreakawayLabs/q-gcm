@@ -2,5 +2,6 @@
     "project_title": "Q-GCM",
     "tags": [{"commit": "ec65506e14ee3a9c0d614548e4e4c64b66d30073", "tag": "2.0.0-beta0"}
 	    ],
-    "project_desc": "Q-GCM is a quasigeostrophic coupled ocean-atmosphere model which can be used for studies of high-resolution physical processes in idealised mid-latitude domains."
+    "project_desc": "Q-GCM is a quasigeostrophic coupled ocean-atmosphere model which can be used for studies of high-resolution physical processes in idealised mid-latitude domains.",
+    "google_groups": "q-gcm-users"
 }
