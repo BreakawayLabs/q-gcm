@@ -39,3 +39,7 @@ If you have compiled in single processor mode, run
     python run_multi.py -x src/q-gcm-single -o output -e dg_fast
 
 This will run the model and place the output in `/output`.
+
+## What Next?
+
+To find out more about configuring your own experiments and analysing results, please consult the user guide.
