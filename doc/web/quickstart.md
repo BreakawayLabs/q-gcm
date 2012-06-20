@@ -30,13 +30,13 @@ To compile the model in single processor mode, with OpenMP disabled, run
 
 ## Run
 
-The model should always be run via the `run_multi.py` script, which ensures all input and output files are managed correctly. To get started running a predefined North Atlantic double gyre model for 10 days, run
+The model should always be run via the `run_model.py` script, which ensures all input and output files are managed correctly. To get started running a predefined North Atlantic double gyre model for 10 days, run
 
-    python run_multi.py -x src/q-gcm -o output -e dg_fast
+    python run_model.py -x src/q-gcm -o output -e dg_fast
 
 If you have compiled in single processor mode, run
 
-    python run_multi.py -x src/q-gcm-single -o output -e dg_fast
+    python run_model.py -x src/q-gcm-single -o output -e dg_fast
 
 This will run the model and place the output in `/output`.
 

@@ -10,7 +10,7 @@ Parallelisation is provided by OpenMP.
 To get up and running, try the following commands:
 
     make -C src
-    python run_multi.py -x src/q-gcm -o output -e dg_fast
+    python run_model.py -x src/q-gcm -o output -e dg_fast
 
 Congratuations, you just ran a North Atlantic double gyre experiment for 10 days using an OpenMP enabled version of Q-GCM.
 The output can be found in `output/`.
