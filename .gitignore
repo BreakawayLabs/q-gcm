@@ -11,3 +11,11 @@ src/q-gcm-profile-parallel
 
 # Ignore emacs generated files
 *~
+
+# Ignore LaTeX generated files
+doc/guide-1.4.0/q-gcm.aux
+doc/guide-1.4.0/q-gcm.log
+doc/guide-1.4.0/q-gcm.out
+doc/guide-1.4.0/q-gcm.pdf
+doc/guide-1.4.0/q-gcm.pdfsync
+doc/guide-1.4.0/q-gcm.toc
