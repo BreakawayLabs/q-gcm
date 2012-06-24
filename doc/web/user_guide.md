@@ -15,7 +15,7 @@ Git can be installed on Debian/Ubuntu systems with the following command.
 
 Installation instructions for other platforms can be found on the [git website](http://git-scm.com/)
 
-### Downloading Stables Releases
+### Downloading Stable Releases
 
 #### Downloading as Zip/Tar File
 
