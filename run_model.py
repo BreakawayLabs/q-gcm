@@ -1,7 +1,18 @@
+"""
+Main script for running Q-GCM models. Run
+
+  python run_model.py --help
+
+for uasge.
+"""
+
 import argparse
 import subprocess
 import sys
 import os
+import shutil
+
+### Constant configuration classes for example experiments
 
 class Config:
 
@@ -62,7 +73,7 @@ class SouthernOceanTauFast(SouthernOceanTau):
 
     clock = "clock-100yr-10dy-3.cdl"
 
-configs = {"dg": DoubleGyre,
+CONFIGS = {"dg": DoubleGyre,
            "dg_fast": DoubleGyreFast,
            "so_only": SouthernOceanOnly,
            "so_only_fast": SouthernOceanOnlyFast,
@@ -72,42 +83,62 @@ configs = {"dg": DoubleGyre,
            "so_tau_fast": SouthernOceanTauFast,
            }
 
+###
+
+def _mkdir(dirname):
+    """ Equiv: mkdir -p dirname. """
+    try:
+        os.mkdir(dirname)
+    except OSError:
+        pass
+
 def setup_from_config(config, setup_dir):
-    os.system("mkdir -p %s" % setup_dir)
-    os.system("cp data/glam/%s %s/glam.cdl" % (config.glam, setup_dir))
-    os.system("cp data/basin/%s %s/ocn_basin.cdl" % (config.ocn, setup_dir))
+    """
+    Take a Config object and generate an input directory.
+    """
+    _mkdir(setup_dir)
+    shutil.copy("data/glam/%s" % config.glam,  "%s/glam.cdl" % setup_dir)
+    shutil.copy("data/basin/%s" % config.ocn, "%s/ocn_basin.cdl" % setup_dir)
     if config.atm:
-        os.system("cp data/basin/%s %s/atm_basin.cdl" % (config.atm, setup_dir))
-    os.system("cp data/windstress/%s %s/windstress.cdl" % (config.wind, setup_dir))
-    os.system("cp data/clocks/%s %s/clock.cdl" % (config.clock, setup_dir))
+        shutil.copy("data/basin/%s" % config.atm, "%s/atm_basin.cdl" % setup_dir)
+    shutil.copy("data/windstress/%s" % config.wind, "%s/windstress.cdl" % setup_dir)
+    shutil.copy("data/clocks/%s" % config.clock, "%s/clock.cdl" % setup_dir)
     if config.data:
         for filename in config.data:
-            os.system("cp data/nc_files/%s %s/" % (filename, setup_dir))
+            shutil.copy("data/nc_files/%s" % filename, setup_dir)
 
 def setup_from_dir(input_dir, setup_dir):
-    # Take the key files from the input directory and move them to the work directory
-    os.system("mkdir -p %s" % setup_dir)
-    os.system("cp %s/*.cdl %s/" % (input_dir, setup_dir))
-    os.system("cp %s/*.nc %s/" % (input_dir, setup_dir))
+    """ Copy all .nc and .cdl files form input_dir to setup_dir. """
+    _mkdir(setup_dir)
+    for filename in os.listdir(input_dir):
+        if filename.endswith((".nc", ".cdl")):
+            shutil.copy("%s/%s" % (input_dir, filename), setup_dir)
 
 stage_from_input = setup_from_dir
 
-def preprocess_stage(stage_dir):
-    # Preprocess the input files in the work directory
-    for file in os.listdir(stage_dir):
-        if file.endswith(".cdl"):
-            base = ".".join(file.split(".")[:-1])
-            cmd = "ncgen %s/%s.cdl -o %s/%s.nc" % (stage_dir, base, stage_dir, base)
-            print cmd
-            os.system(cmd)
-
-def run_model(stage_dir, output_dir, exe, num_threads):
-    # Run the model
-    os.system("mkdir -p %s" % output_dir)
-    cmd = "OMP_NUM_THREADS=%d %s %s %s" % (num_threads, exe, stage_dir, output_dir)
-    #cmd = "valgrind %s %s %s" % (exe, stage_dir, output_dir)
+def _ncgen(filename, stage_dir):
+    """
+    Takes a filename <foo.cdl> in stage_dir and generates <foo.nc> in stage_dir
+    by calling out to the ncgen shell command.
+    """
+    base = ".".join(filename.split(".")[:-1])
+    cmd = "ncgen %s/%s.cdl -o %s/%s.nc" % (stage_dir, base, stage_dir, base)
     print cmd
-    f = open("%s/stdout.txt" % output_dir, "w")
+    os.system(cmd)
+
+def ncgen_all(stage_dir):
+    """ Run ncgen on all .cdl in the directory directory. """
+    for filename in os.listdir(stage_dir):
+        if filename.endswith(".cdl"):
+            _ncgen(filename, stage_dir)
+
+def run_model(stage_dir, out_dir, exe, num_threads):
+    # Run the model, piping stdout from the model to stdout of this script
+    _mkdir(out_dir)
+    cmd = "OMP_NUM_THREADS=%d %s %s %s" % (num_threads, exe, stage_dir, out_dir)
+    #cmd = "valgrind %s %s %s" % (exe, stage_dir, out_dir)
+    print cmd
+    f = open("%s/stdout.txt" % out_dir, "w")
     p1 = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     out = p1.stdout
     while True:
@@ -118,17 +149,28 @@ def run_model(stage_dir, output_dir, exe, num_threads):
         else:
             break
     f.close()
-    return p1.wait()
+    ret = p1.wait()
 
-def run_single(input_dir, stage_dir, output_dir, exe, num_threads):
+    if ret != 0:
+        print "FAILED in run. Failed stage output:", out_dir
+        sys.exit(ret)
 
+def run_single(input_dir, stage_dir, out_dir, exe, num_threads):
+
+    # cp input_dir/*.{nc,cdl} stage_dir
     stage_from_input(input_dir, stage_dir)
 
-    preprocess_stage(stage_dir)
+    # ncgen stage_dir/*cdl -> stage_dir/*nc
+    ncgen_all(stage_dir)
 
-    return run_model(stage_dir, output_dir, exe, num_threads)
+    # q-gcm stage_dir -> out_dir
+    run_model(stage_dir, out_dir, exe, num_threads)
+
 
 def update_clock(filename):
+    """
+    Edit a clock file, updating 'tini' by adding 'trun'.
+    """
     if not os.path.exists(filename):
         ncfile = filename.rsplit(".", 1)[0] + ".nc"
         subprocess.call("ncdump %s > %s" % (ncfile, filename), shell=True)
@@ -146,7 +188,7 @@ def update_clock(filename):
             line = "\ttrun = %f;\n" % trun
         f.write(line)
     f.close()
-    subprocess.call("mv %s.tmp %s" % (filename, filename), shell=True)
+    os.rename("%s.tmp" % filename, filename)
 
 def update_basin(filename):
     """
@@ -176,52 +218,60 @@ def update_basin(filename):
         else:
             f.write(line)
     f.close()
-    subprocess.call("mv %s.tmp %s" % (filename, filename), shell=True)
+    os.rename("%s.tmp" % filename, filename)
+
+def create_next_input_dir(stage_dir, out_dir, next_in):
+    # take stage-n, out-n and create in-(n+1)
+    _mkdir(next_in)
+    files_to_copy = ["%s/%s" % (stage_dir, filename) for filename in os.listdir(stage_dir)]
+    for filename in os.listdir(out_dir):
+        if filename.endswith("lastday.nc"):
+            files_to_copy.append("%s/%s" % (out_dir, filename))
+    for filename in files_to_copy:
+        shutil.copy(filename, next_in)
+
+    update_basin("%s/ocn_basin.cdl" % next_in)
+    update_basin("%s/atm_basin.cdl" % next_in)
+    update_clock("%s/clock.cdl" % next_in)
 
 def main(exe, output_dir, num_threads, repeats, input_dir, exp):
+    
+    # Create the base output directory
+    _mkdir(output_dir)
 
-    # Create the output directory
-    if output_dir.endswith("/"):
-        output_dir = output_dir[:-1]
-    subprocess.call("mkdir -p %s" % output_dir, shell=True)
-
-    # Setup the very first directory
-    setup_dir= "%s/in-orig" % output_dir
+    # Setup the very first directory, in-orig
+    setup_dir = "%s/in-orig" % output_dir
     if input_dir is not None:
-        if input_dir.endswith("/"):
-            input_dir = input_dir[:-1]
+        # cp input_dir/*.{nc,cdl} -> setup_dir
         setup_from_dir(input_dir, setup_dir)
     elif exp is not None:
-        setup_from_config(configs[exp], setup_dir)
+        setup_from_config(CONFIGS[exp], setup_dir)
     else:
         assert False
 
     # Copy everything from the input director into in-0
-    subprocess.call("cp -R %s/in-orig %s/in-0" % (output_dir, output_dir), shell=True)
+    shutil.copytree("%s/in-orig" % output_dir, "%s/in-0" % output_dir)
 
-    # For each run:
     for run in range(repeats):
-        # run single with in-n, out-n
         in_dir = "%s/in-%d" % (output_dir, run)
         stage_dir = "%s/stage-%d" % (output_dir, run)
         out_dir = "%s/out-%d" % (output_dir, run)
-        ret = run_single(in_dir, stage_dir, out_dir, exe, num_threads)
-        if ret != 0:
-            print "FAILED in run", run
-            sys.exit(ret)
-
-        # take stage-n, out-n and create in-(n+1)
         next_in = "%s/in-%d" % (output_dir, run+1)
-        subprocess.call("mkdir -p %s" % next_in, shell=True)
-        subprocess.call("cp %s/* %s/" % (stage_dir, next_in), shell=True)
-        subprocess.call("cp %s/*lastday.nc %s/" % (out_dir, next_in), shell=True)
 
-        update_basin("%s/ocn_basin.cdl" % next_in)
-        update_basin("%s/atm_basin.cdl" % next_in)
-        update_clock("%s/clock.cdl" % next_in)
+        # in-n -> stage-n -> out-n
+        run_single(in_dir, stage_dir, out_dir, exe, num_threads)
+
+        # (stage-n, out-n) -> in-(n+1)
+        create_next_input_dir(stage_dir, out_dir, next_in)
 
 
-if __name__ == '__main__':
+def _strip_slash(dirname):
+    if dirname is not None:
+        if dirname.endswith("/"):
+            dirname = dirname[:-1]
+    return dirname
+
+def parse_args():
 
     parser = argparse.ArgumentParser(description='Run a Q-GCM experiment.',
                                      epilog="One of the -e or -i options must be provided.")
@@ -237,7 +287,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', dest="input_dir", type=str,
                         help='Directory containing input files.')
-    parser.add_argument('-e', '--exp', dest="exp", type=str, choices=configs,
+    parser.add_argument('-e', '--exp', dest="exp", type=str, choices=CONFIGS,
                         help='A predefined experiment.')
 
     args = parser.parse_args()
@@ -254,4 +304,8 @@ if __name__ == '__main__':
     print "INPUT", args.input_dir
     print "EXP", args.exp
 
-    main(args.exe, args.output_dir, args.num_threads, args.repeats, args.input_dir, args.exp)
+    return args
+
+if __name__ == '__main__':
+    args = parse_args()
+    main(args.exe, _strip_slash(args.output_dir), args.num_threads, args.repeats, _strip_slash(args.input_dir), args.exp)
